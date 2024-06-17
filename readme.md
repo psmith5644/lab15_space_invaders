@@ -1,4 +1,4 @@
-![image](https://github.com/psmith5644/lab15_space_invaders/assets/89104752/44ba47f7-1a24-4144-8720-f18e9a00033f)# Lab 15: Space Invaders
+# Lab 15: Space Invaders
 
 This project is a simple Space Invaders recreation that runs on the TM4C123GH6PM microcontroller (Tiva Launchpad).  
 It takes input from the user from buttons and a slide potentiometer and uses a Nokia5110 screen.
