@@ -3,6 +3,7 @@
 This project is a simple Space Invaders recreation that runs on the TM4C123GH6PM microcontroller (Tiva Launchpad).  
 It takes input from the user from buttons and a slide potentiometer and uses a Nokia5110 screen.
 This project builds on the work that I have done over several previous labs developing modules for a DAC, ADC, outputting sound, handling user input, etc.
+I completed this project in December 2023
 
 # Notes
 
@@ -26,3 +27,4 @@ I may return in the future to do some refactoring.
 * Although the code is somewhat modularized, it is far from ideal.  Refactoring is needed 
 * The function documentation is incomplete
 * A lot of the logic in the play() function needs to be extracted into helper functions for readability
+* I did not use git during the development and only added it after I was mostly done.
