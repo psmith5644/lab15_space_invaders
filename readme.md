@@ -1,4 +1,4 @@
-Space Invaders
+# Space Invaders
 
 This project is a simple Space Invaders recreation that runs on the TM4C123GH6PM microcontroller (Tiva Launchpad).  
 It takes input from the user from buttons and a slide potentiometer and uses a Nokia5110 screen.
