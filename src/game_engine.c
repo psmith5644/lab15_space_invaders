@@ -29,6 +29,8 @@
 #define ENEMY_MISSILE_SPEED 15
 #define START_SCREEN_DURATION 500
 
+static void GameEngine_UpdateMissileReadyLEDIndicators(void);
+
 // An array of pointers to Sprite structs of all Sprites currently in game
 GameObjectList objects;
 bool waitForSysTick = true;
@@ -74,17 +76,9 @@ void play(void) {
         // shouldn't be a problem because the bitmap will always ensure that any copies are not used.
         // FIXME: missile copies add up and some of them have the wrong index.  
         // TODO: test if this declaration can be file-scope
-        Missile playerMissile;
-        
-        // update LEDs
-        if (GameObject_isAlive((GameObject*)&playerMissile)) {
-            green_LED_off();
-            red_LED_on();
-        }
-        else {
-            green_LED_on();
-            red_LED_off();
-        }
+        GameEngine_UpdateMissileReadyLEDIndicators();
+
+
             
         
         uint8_t missileX = Sprite_getX((Sprite*)&player) + (PLAYER_SPRITE_WIDTH / 2);
@@ -177,6 +171,17 @@ void enemyFireMissile(Enemy const * const enemy) {
             GameObjectList_Add(&objects, (GameObject*)&enemyMissiles[i]);
             break;
         }
+    }
+}
+
+static void GameEngine_UpdateMissileReadyLEDIndicators(void) {
+    if (GameObject_isAlive((GameObject*)&playerMissile)) {
+        green_LED_off();
+        red_LED_on();
+    }
+    else {
+        green_LED_on();
+        red_LED_off();
     }
 }
 
