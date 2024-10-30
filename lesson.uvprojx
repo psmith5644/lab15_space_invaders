@@ -563,6 +563,11 @@
               <FileType>5</FileType>
               <FilePath>.\src\images.h</FilePath>
             </File>
+            <File>
+              <FileName>errors.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\errors.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
