@@ -46,8 +46,9 @@ void play(void) {
     GameObjectList_ctor(&objects);
 
     Player player;
-    Player_ctor(&player, PlayerShip0, SCREENW / 2 - PLAYERW / 2, SCREEN_HEIGHT, true, 3, 1);
-    player.super.super.index = GameObjectList_add(&objects, (GameObject*)&player);
+    PlayerConfig const playerConfig = {PlayerShip0, SCREENW / 2 - PLAYERW / 2, SCREEN_HEIGHT, true, 3, 1};
+    Player_ctor(&player, playerConfig);
+    GameObjectList_Add(&objects, (GameObject*)&player);
     
     Bunker bunker;
     Bunker_ctor(&bunker, Bunker0, SCREEN_WIDTH / 2 - BUNKERW / 2, SCREEN_HEIGHT - PLAYER_SPRITE_HEIGHT, BUNKER_HEALTH);

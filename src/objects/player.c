@@ -11,8 +11,7 @@ static void takeDamage(Player * const me, uint8_t const amt);
 static void decrementInvincibility(Player * const me);
 static float const position_coef = (float)(SCREEN_WIDTH - PLAYER_SHIP_WIDTH_PX) / (float)ADC_MAX_VAL;
 
-void Player_ctor(Player * const me, unsigned char const * bmp, uint8_t x_pos, uint8_t y_pos, 
-                 bool bounded, uint8_t health, uint8_t bombAmmo) {
+void Player_ctor(Player * const me, PlayerConfig playerConfig) {
     static const struct GameObjectVtable vtable = {
         .update = (void (*)(GameObject * const me))&Player_update,
         .getBmp = (unsigned char const * (*)(GameObject const * const me))&Sprite_getBmp,
@@ -21,11 +20,11 @@ void Player_ctor(Player * const me, unsigned char const * bmp, uint8_t x_pos, ui
         .checkCollision = (bool (*)(GameObject const * const me, GameObject const * const other))&Sprite_checkCollision,
         .handleCollision = (void (*)(GameObject * const me, GameObject * const other))&Player_handleCollision
     };
-    Sprite_ctor(&me->super, bmp, x_pos, y_pos, bounded);
+    Sprite_ctor(&me->super, playerConfig.bmp, playerConfig.x_pos, playerConfig.y_pos, playerConfig.bounded);
     me->super.super.vptr = &vtable;
     
-    me->health = health;
-    me->bombAmmo = bombAmmo;    
+    me->health = playerConfig.health;
+    me->bombAmmo = playerConfig.bombAmmo;    
     me->super.super.objectType = PlayerType;
 }
 
