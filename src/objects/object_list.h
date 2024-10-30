@@ -4,6 +4,7 @@
 #include "game_object.h"
 #include <stdint.h>
 #include <stdbool.h>
+#include "log.h"
 
 #define MAX_OBJECTS 32
 
