@@ -10,5 +10,5 @@ typedef struct {
     char const * const msg;
 } ERR_t;
 
-ERR_t const SUCCESS = {CODE_SUCCESS, ""};
-ERR_t const ERR_OBJECTLIST_FULL = {CODE_OBJECTLIST_FULL, "Object List Full"};
+ERR_t extern const SUCCESS;
+ERR_t extern const ERR_OBJECTLIST_FULL;
