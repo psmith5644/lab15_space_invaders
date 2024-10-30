@@ -54,7 +54,7 @@ void EnemyWave_ctor(EnemyWave * const me, uint8_t speed, uint8_t fireRate, uint8
     // initialize all enemies in this wave
     for (uint8_t i = 0; i < ENEMIES_PER_WAVE; i++) {
         Enemy_ctor(&me->enemies[i], SmallEnemy10PointA, i*ENEMY10W, ENEMY10H, 1);
-        ((GameObject*)&me->enemies[i])->index = GameObjectList_Add(&objects, (GameObject*)&me->enemies[i]);
+        GameObjectList_Add(&objects, (GameObject*)&me->enemies[i]);
     }
 }
 

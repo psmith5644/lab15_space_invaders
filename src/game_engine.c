@@ -50,11 +50,11 @@ void play(void) {
     
     Bunker bunker;
     Bunker_ctor(&bunker, Bunker0, SCREEN_WIDTH / 2 - BUNKERW / 2, SCREEN_HEIGHT - PLAYER_SPRITE_HEIGHT, BUNKER_HEALTH);
-    ((GameObject*)&bunker)->index = GameObjectList_Add(&objects, (GameObject*)&bunker);
+    GameObjectList_Add(&objects, (GameObject*)&bunker);
     
     EnemyWave wave;
     EnemyWave_ctor(&wave, 1, 1, 15);
-    wave.super.index = GameObjectList_Add(&objects, (GameObject*)&wave);
+    GameObjectList_Add(&objects, (GameObject*)&wave);
     
     uint8_t button0PressedLastFrame = 0;
     uint8_t button1PressedLastFrame = 0;
@@ -92,7 +92,7 @@ void play(void) {
         if (button0Pressed && !button0PressedLastFrame && !GameObject_isAlive((GameObject*)&playerMissile)) {
             // launch player missile
             Missile_ctor(&playerMissile, Missile0, missileX, missileY, PLAYER_MISSILE_SPEED, Up, PlayerTeam);
-            ((GameObject*)&playerMissile)->index = GameObjectList_Add(&objects, (GameObject*)&playerMissile);
+            GameObjectList_Add(&objects, (GameObject*)&playerMissile);
             Sound_Shoot(); // TEST
         }
         if (button1Pressed) {
@@ -174,7 +174,7 @@ void enemyFireMissile(Enemy const * const enemy) {
         if (!(GameObject_isAlive((GameObject*)&enemyMissiles[i])))
         {
             Missile_ctor(&enemyMissiles[i], Missile1, ((Sprite*)enemy)->x_pos + ENEMY10W/2, ((Sprite*)enemy)->y_pos + MISSILEH, ENEMY_MISSILE_SPEED, Down, EnemyTeam); 
-            ((GameObject*)&enemyMissiles[i])->index = GameObjectList_Add(&objects, (GameObject*)&enemyMissiles[i]);
+            GameObjectList_Add(&objects, (GameObject*)&enemyMissiles[i]);
             break;
         }
     }
