@@ -29,131 +29,49 @@
 #define ENEMY_MISSILE_SPEED 15
 #define START_SCREEN_DURATION 500
 
-static void GameEngine_UpdateMissileReadyLEDIndicators(void);
+static void updateMissileReadyLEDIndicators(void);
+static void calcPlayerMissileStartPos(uint8_t * playerMissileX, uint8_t * playerMissileY);
+static void handlePlayerMissileLaunch(void);
+static void updateObjects(void);
+static void handleSpriteCollisions(void);
+static void updateDisplay(void);
+static void checkForWinCondition(void);
+static void initGame(void);
 
-// An array of pointers to Sprite structs of all Sprites currently in game
-GameObjectList objects;
+GameObjectList objects; // An array of pointers to Sprite structs of all Sprites currently in game
 bool waitForSysTick = true;
-Missile enemyMissiles[ENEMIES_PER_WAVE];
+Missile static enemyMissiles[ENEMIES_PER_WAVE];
 extern uint32_t ms_elapsed;
-
-// TODO: make some of the variables static to make them more optimal?
+Missile static playerMissile;
+Player static player;
+uint8_t static playerMissileX, playerMissileY;
+bool static button0PressedLastFrame, button1PressedLastFrame;
+bool static button0Pressed, button1Pressed;
+EnemyWave static wave;
 
 void play(void) {
-    displayStartScreen();
-    srand(ms_elapsed);
+    initGame();
 
-    GameObjectList_ctor(&objects);
-
-    Player player;
-    PlayerConfig const playerConfig = {PlayerShip0, SCREENW / 2 - PLAYERW / 2, SCREEN_HEIGHT, true, 3, 1};
-    Player_ctor(&player, playerConfig);
-    GameObjectList_Add(&objects, (GameObject*)&player);
-    
-    Bunker bunker;
-    Bunker_ctor(&bunker, Bunker0, SCREEN_WIDTH / 2 - BUNKERW / 2, SCREEN_HEIGHT - PLAYER_SPRITE_HEIGHT, BUNKER_HEALTH);
-    GameObjectList_Add(&objects, (GameObject*)&bunker);
-    
-    EnemyWave wave;
-    EnemyWave_ctor(&wave, 1, 1, 15);
-    GameObjectList_Add(&objects, (GameObject*)&wave);
-    
-    uint8_t button0PressedLastFrame = 0;
-    uint8_t button1PressedLastFrame = 0;
     while(1) {
-        // At 30 Hz (wait for semaphore)
-        while(waitForSysTick);
+        while(waitForSysTick); // Set framerate to 30Hz
         waitForSysTick = true;
 
         // check if user buttons have been pressed since last frame
-        uint8_t button0Pressed = readButton0_RIS();
-        uint8_t button1Pressed = readButton1_RIS();
+        button0Pressed = readButton0_RIS();
+        button1Pressed = readButton1_RIS();
         
+        updateMissileReadyLEDIndicators();
+        calcPlayerMissileStartPos(&playerMissileX, &playerMissileY);
+        handlePlayerMissileLaunch();
+        updateObjects();
+        handleSpriteCollisions();
+        updateDisplay();
 
-        
-        // FIXME: the playerMissile is always in the same spot in memory so after multiple shots there are now multiple missile
-        // in the objects array
-        // shouldn't be a problem because the bitmap will always ensure that any copies are not used.
-        // FIXME: missile copies add up and some of them have the wrong index.  
-        // TODO: test if this declaration can be file-scope
-        GameEngine_UpdateMissileReadyLEDIndicators();
-
-
-            
-        
-        uint8_t missileX = Sprite_getX((Sprite*)&player) + (PLAYER_SPRITE_WIDTH / 2);
-        uint8_t missileY = Sprite_getY((Sprite*)&player) - PLAYER_SPRITE_HEIGHT;
-        if (button0Pressed && !button0PressedLastFrame && !GameObject_isAlive((GameObject*)&playerMissile)) {
-            // launch player missile
-            Missile_ctor(&playerMissile, Missile0, missileX, missileY, PLAYER_MISSILE_SPEED, Up, PlayerTeam);
-            GameObjectList_Add(&objects, (GameObject*)&playerMissile);
-            Sound_Shoot(); // TEST
-        }
-        if (button1Pressed) {
-            // launch player bomb
-        }
-
-        
-        // update each game object
-        for (int i = 0; i < MAX_OBJECTS; i++) {
-            if (objects.bitmap & (1 << i)) {
-                GameObject_update_vcall(objects.objects[i]);
-            }
-            
-        }
-        
-        // handle collisions between sprites
-        for (int i = 0; i < MAX_OBJECTS; i++) {
-            if (!(objects.bitmap & (1 << i))) {
-                continue;
-            }
-            for (int j = i+1; j < MAX_OBJECTS; j++) {
-                if (!(objects.bitmap & (1 << j))) {
-                    continue;
-                }
-                if (GameObject_checkCollision_vcall(objects.objects[i], objects.objects[j])) {
-                    GameObject_handleCollision_vcall(objects.objects[i], objects.objects[j]);
-                    GameObject_handleCollision_vcall(objects.objects[j], objects.objects[i]);
-                }
-
-            }
-        }
-        
-        
-        
-        // print to the screen
-        Nokia5110_ClearBuffer();
-        Nokia5110_Clear();
-        for (int i = 0; i < MAX_OBJECTS; i++) {
-            if (!(objects.bitmap & (1 << i))) {
-                continue;
-            }
-            GameObject * obj = objects.objects[i];
-            if (GameObject_isAlive(obj)) {
-                Nokia5110_PrintBMP(GameObject_getX_vcall(obj), GameObject_getY_vcall(obj), GameObject_getBmp_vcall(obj), 0);
-            }
-        }
-        Nokia5110_DisplayBuffer();
-        
         // button debouncing by an extra frame (+33.3 ms)
         button0PressedLastFrame = button0Pressed;
         button1PressedLastFrame = button1Pressed;
         
-        // TODO check for win
-        bool win = true;
-        for (uint8_t i = 0; i < ENEMIES_PER_WAVE; i++) {
-            Enemy enemy = wave.enemies[i];
-            if (((GameObject*)&enemy)->alive) {
-                win = false;
-            }
-        }
-        if (win) {
-            displayWinScreen();
-            return;
-        }
-        
-        // TODO check for loss
-        
+        checkForWinCondition();
     }
 }
 
@@ -161,7 +79,6 @@ void destroyGameObject(GameObject * const obj) {
     GameObjectList_Remove(&objects, obj->index);
 }
 
-// TEST
 // FIXME: missiles get launched from weird spots
 void enemyFireMissile(Enemy const * const enemy) {
     for (uint8_t i = 0; i < ENEMIES_PER_WAVE; i++) {
@@ -174,7 +91,7 @@ void enemyFireMissile(Enemy const * const enemy) {
     }
 }
 
-static void GameEngine_UpdateMissileReadyLEDIndicators(void) {
+static void updateMissileReadyLEDIndicators(void) {
     if (GameObject_isAlive((GameObject*)&playerMissile)) {
         green_LED_off();
         red_LED_on();
@@ -183,6 +100,107 @@ static void GameEngine_UpdateMissileReadyLEDIndicators(void) {
         green_LED_on();
         red_LED_off();
     }
+}
+
+static void calcPlayerMissileStartPos(uint8_t * playerMissileX, uint8_t * playerMissileY) {
+    *playerMissileX = Sprite_getX((Sprite*)&player) + (PLAYER_SPRITE_WIDTH / 2);
+    *playerMissileY = Sprite_getY((Sprite*)&player) - PLAYER_SPRITE_HEIGHT;
+}
+
+// FIXME: the playerMissile is always in the same spot in memory so after multiple shots there are now multiple missile
+// in the objects array
+// shouldn't be a problem because the bitmap will always ensure that any copies are not used.
+// FIXME: missile copies add up and some of them have the wrong index.  
+static void handlePlayerMissileLaunch(void) {
+    if (button0Pressed && !button0PressedLastFrame && !GameObject_isAlive((GameObject*)&playerMissile)) {
+        // launch player missile
+        Missile_ctor(&playerMissile, Missile0, playerMissileX, playerMissileY, PLAYER_MISSILE_SPEED, Up, PlayerTeam);
+        GameObjectList_Add(&objects, (GameObject*)&playerMissile);
+        Sound_Shoot(); // TEST
+    }
+    // if (button1Pressed) {
+    //     // launch player bomb
+    // }
+}
+
+static void updateObjects(void) {
+    // update each game object
+    for (int i = 0; i < MAX_OBJECTS; i++) {
+        if (objects.bitmap & (1 << i)) {
+            GameObject_update_vcall(objects.objects[i]);
+        }
+    }
+}
+
+static void handleSpriteCollisions(void) {
+    // handle collisions between sprites
+    for (int i = 0; i < MAX_OBJECTS; i++) {
+        if (!(objects.bitmap & (1 << i))) {
+            continue;
+        }
+        for (int j = i+1; j < MAX_OBJECTS; j++) {
+            if (!(objects.bitmap & (1 << j))) {
+                continue;
+            }
+            if (GameObject_checkCollision_vcall(objects.objects[i], objects.objects[j])) {
+                GameObject_handleCollision_vcall(objects.objects[i], objects.objects[j]);
+                GameObject_handleCollision_vcall(objects.objects[j], objects.objects[i]);
+            }
+
+        }
+    }
+}
+
+static void updateDisplay(void) {
+    // print to the screen
+    Nokia5110_ClearBuffer();
+    Nokia5110_Clear();
+    for (int i = 0; i < MAX_OBJECTS; i++) {
+        if (!(objects.bitmap & (1 << i))) {
+            continue;
+        }
+        GameObject * obj = objects.objects[i];
+        if (GameObject_isAlive(obj)) {
+            Nokia5110_PrintBMP(GameObject_getX_vcall(obj), GameObject_getY_vcall(obj), GameObject_getBmp_vcall(obj), 0);
+        }
+    }
+    Nokia5110_DisplayBuffer();
+}
+
+static void checkForWinCondition(void) {
+    bool win = true;
+    for (uint8_t i = 0; i < ENEMIES_PER_WAVE; i++) {
+        Enemy enemy = wave.enemies[i];
+        if (((GameObject*)&enemy)->alive) {
+            win = false;
+        }
+    }
+    if (win) {
+        displayWinScreen();
+        return;
+    }
+}
+
+static void initGame(void) {
+    PlayerConfig const playerConfig = {PlayerShip0, SCREENW / 2 - PLAYERW / 2, SCREEN_HEIGHT, true, 3, 1};
+    Bunker bunker;
+
+    displayStartScreen();
+    srand(ms_elapsed);
+
+    GameObjectList_ctor(&objects);
+
+    Player_ctor(&player, playerConfig);
+    GameObjectList_Add(&objects, (GameObject*)&player);
+    
+    Bunker_ctor(&bunker, Bunker0, SCREEN_WIDTH / 2 - BUNKERW / 2, SCREEN_HEIGHT - PLAYER_SPRITE_HEIGHT, BUNKER_HEALTH);
+    GameObjectList_Add(&objects, (GameObject*)&bunker);
+    
+    EnemyWave_ctor(&wave, 1, 1, 15);
+    GameObjectList_Add(&objects, (GameObject*)&wave);
+    
+    button0PressedLastFrame = 0;
+    button1PressedLastFrame = 0;
 }
 
 void displayStartScreen() {
